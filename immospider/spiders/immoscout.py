@@ -33,9 +33,9 @@ class ImmoscoutSpider(scrapy.Spider):
 
                     item = ImmoscoutItem()
 
-                    data = result["resultlist.realEstate"]
-
                     # print(data)
+
+                    data = result["resultlist.realEstate"]
 
                     item['immo_id'] = data['@id']
                     item['url'] = response.urljoin("/expose/" + str(data['@id']))
@@ -48,10 +48,18 @@ class ImmoscoutSpider(scrapy.Spider):
                     item['city'] = address['city']
                     item['zip_code'] = address['postcode']
                     item['district'] = address['quarter']
+                    try:
+                        item['lat'] = address['wgs84Coordinate']['latitude']
+                        item['lng'] = address['wgs84Coordinate']['longitude']
+                    except Exception as e:
+                        # print(e)
+                        item['lat'] = None
+                        item['lng'] = None
 
                     item["rent"] = data["price"]["value"]
-                    item["sqm"] = data["livingSpace"]
+                    item["livingSpace"] = data["livingSpace"]
                     item["rooms"] = data["numberOfRooms"]
+                    item["brokerage"] = data["courtage"]["hasCourtage"]
 
                     if "calculatedPrice" in data:
                         item["extra_costs"] = (data["calculatedPrice"]["value"] - data["price"]["value"])
@@ -66,7 +74,12 @@ class ImmoscoutSpider(scrapy.Spider):
                     if "plotArea" in data:
                         item["area"] = data["plotArea"]
                     if "cellar" in data:
-                        item["cellar"] = data["cellar"]       
+                        item["cellar"] = data["cellar"]
+                    if "guestToilet" in data:
+                        item["guestToilet"] = data["guestToilet"]
+
+                    if "@publishDate" in result:
+                        item["publishDate"] = result["@publishDate"]
 
                     try:
                         contact = data['contactDetails']
@@ -79,13 +92,7 @@ class ImmoscoutSpider(scrapy.Spider):
                     except:
                         item['media_count'] = 0
 
-                    try:
-                        item['lat'] = address['wgs84Coordinate']['latitude']
-                        item['lng'] = address['wgs84Coordinate']['longitude']
-                    except Exception as e:
-                        # print(e)
-                        item['lat'] = None
-                        item['lng'] = None 
+
                
                     yield item
 
